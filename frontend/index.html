@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana Staking - Marinade</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ Solana Staking (Marinade)</h1>
+    <button id="connectBtn">Connect Phantom Wallet</button>
+    <p id="wallet">Wallet: Not connected</p>
+    <p id="balance">Balance: --</p>
+
+    <div class="card">
+      <h2>Stake SOL</h2>
+      <input type="number" id="stakeAmount" placeholder="Amount in SOL">
+      <button id="stakeBtn">Stake</button>
+    </div>
+
+    <div class="card">
+      <h2>Your Investment</h2>
+      <p id="investment">Loading...</p>
+      <button id="fetchInvestment">Refresh</button>
+    </div>
+
+    <div class="card">
+      <h2>Withdraw SOL</h2>
+      <input type="number" id="withdrawAmount" placeholder="Amount in SOL">
+      <button id="withdrawBtn">Withdraw</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
