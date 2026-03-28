@@ -1,36 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solana Staking - Marinade</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F5F2EE" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0C0B0A"  media="(prefers-color-scheme: dark)" />
+  <title>Solana Staking</title>
+  <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';</script>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>⚡ Solana Staking (Marinade)</h1>
-    <button id="connectBtn">Connect Phantom Wallet</button>
-    <p id="wallet">Wallet: Not connected</p>
-    <p id="balance">Balance: --</p>
 
-    <div class="card">
-      <h2>Stake SOL</h2>
-      <input type="number" id="stakeAmount" placeholder="Amount in SOL">
-      <button id="stakeBtn">Stake</button>
-    </div>
+  <div id="toasts" aria-live="polite"></div>
 
-    <div class="card">
-      <h2>Your Investment</h2>
-      <p id="investment">Loading...</p>
-      <button id="fetchInvestment">Refresh</button>
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">⚡</span>
+      <span class="logo-text">Solana Staking</span>
     </div>
+    <div class="header-actions">
+      <span class="powered-by">Powered by Marinade</span>
+      <button id="themeToggle" class="btn-icon" aria-label="Toggle theme" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
+  </header>
 
-    <div class="card">
-      <h2>Withdraw SOL</h2>
-      <input type="number" id="withdrawAmount" placeholder="Amount in SOL">
-      <button id="withdrawBtn">Withdraw</button>
+  <!-- ── App Navigation ──────────────────────────────────────────────────── -->
+  <nav class="app-nav" aria-label="Main navigation">
+    <div class="app-nav-inner">
+      <button class="nav-tab active" id="tabPortfolio">Portfolio</button>
+      <button class="nav-tab"        id="tabHoldings">Holdings</button>
+      <button class="nav-tab"        id="tabMarket">Market</button>
     </div>
-  </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ── Portfolio View ──────────────────────────────────────────────── -->
+    <div id="portfolioView">
+
+      <!-- Connect Screen -->
+      <section id="connectScreen" class="screen">
+        <div class="connect-card">
+          <div class="connect-hero">
+            <div class="connect-logo">⚡</div>
+            <h1>Liquid Staking</h1>
+            <p class="connect-desc">
+              Stake SOL and receive mSOL — a liquid token you can use across DeFi
+              while earning staking rewards of <strong>~6–8% APY</strong>.
+            </p>
+          </div>
+          <button id="connectBtn" class="btn-primary btn-lg" style="width:100%">
+            Connect Phantom Wallet
+          </button>
+          <p id="phantomMissing" class="phantom-missing hidden">
+            Phantom not found.
+            <a href="https://phantom.app" target="_blank" rel="noopener">Install Phantom →</a>
+          </p>
+          <div class="connect-features">
+            <div class="feature"><span class="feature-icon">🔒</span><span>Non-custodial — you sign every transaction</span></div>
+            <div class="feature"><span class="feature-icon">💧</span><span>Liquid staking via Marinade Finance</span></div>
+            <div class="feature"><span class="feature-icon">⚡</span><span>Instant unstake available (small fee)</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dashboard Screen -->
+      <section id="dashboardScreen" class="screen hidden">
+
+        <div class="wallet-bar">
+          <div class="wallet-info">
+            <span class="badge badge-success">● Mainnet</span>
+            <span id="walletAddress" class="wallet-address">–</span>
+            <button id="copyBtn" class="btn-ghost btn-sm" title="Copy address">Copy</button>
+          </div>
+          <button id="disconnectBtn" class="btn-ghost btn-sm btn-danger">Disconnect</button>
+        </div>
+
+        <div class="balance-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">SOL Balance</span>
+              <button id="refreshSol" class="btn-icon btn-sm" title="Refresh">↻</button>
+            </div>
+            <div class="stat-amount" id="solAmount">–</div>
+            <div class="stat-usd"    id="solUsd">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label">mSOL Balance</span>
+              <button id="refreshMsol" class="btn-icon btn-sm" title="Refresh">↻</button>
+            </div>
+            <div class="stat-amount" id="msolAmount">–</div>
+            <div class="stat-usd"    id="msolUsd">–</div>
+          </div>
+        </div>
+
+        <div class="actions-grid">
+
+          <div class="action-card">
+            <div class="action-header">
+              <h2 class="action-title">Stake SOL</h2>
+              <span class="apy-badge">~6–8% APY</span>
+            </div>
+            <p class="action-desc">Deposit SOL, receive mSOL. Accumulates staking rewards automatically.</p>
+            <div class="currency-toggle" id="stakeToggle">
+              <button class="toggle-opt active" data-mode="sol">SOL</button>
+              <button class="toggle-opt"        data-mode="usd">USD</button>
+            </div>
+            <div class="input-row">
+              <div class="input-wrap">
+                <input id="stakeAmount" type="number" min="0" step="any" placeholder="0.00" />
+                <span class="input-suffix" id="stakeSuffix">SOL</span>
+              </div>
+              <button id="maxStake" class="btn-ghost btn-sm">Max</button>
+            </div>
+            <div class="estimate" id="stakeEstimate">≈ – mSOL</div>
+            <button id="stakeBtn" class="btn-primary" style="width:100%">Stake SOL</button>
+          </div>
+
+          <div class="action-card">
+            <div class="action-header">
+              <h2 class="action-title">Withdraw mSOL</h2>
+              <span class="badge badge-neutral">Liquid Unstake</span>
+            </div>
+            <p class="action-desc">Instantly convert mSOL back to SOL. A small unstake fee applies.</p>
+            <div class="currency-toggle" id="withdrawToggle">
+              <button class="toggle-opt active" data-mode="msol">mSOL</button>
+              <button class="toggle-opt"        data-mode="usd">USD</button>
+            </div>
+            <div class="input-row">
+              <div class="input-wrap">
+                <input id="withdrawAmount" type="number" min="0" step="any" placeholder="0.00" />
+                <span class="input-suffix" id="withdrawSuffix">mSOL</span>
+              </div>
+              <button id="maxWithdraw" class="btn-ghost btn-sm">Max</button>
+            </div>
+            <div class="estimate" id="withdrawEstimate">≈ – SOL</div>
+            <button id="withdrawBtn" class="btn-secondary" style="width:100%">Withdraw mSOL</button>
+          </div>
+
+        </div>
+
+        <div class="tx-section">
+          <div class="tx-header">
+            <h3 class="tx-title">Transaction Log</h3>
+            <button id="clearTx" class="btn-ghost btn-sm">Clear</button>
+          </div>
+          <div id="txList" class="tx-list">
+            <p class="tx-empty">No transactions this session.</p>
+          </div>
+        </div>
+
+      </section>
+    </div><!-- /portfolioView -->
+
+    <!-- ── Holdings Screen ───────────────────────────────────────────────── -->
+    <section id="holdingsScreen" class="screen hidden">
+
+      <div class="market-header">
+        <div class="market-title-wrap">
+          <h2 class="market-title">Portfolio Holdings</h2>
+          <span class="market-updated" id="holdingsUpdated"></span>
+        </div>
+        <button id="refreshHoldings" class="btn-ghost btn-sm">↻ Refresh</button>
+      </div>
+
+      <!-- Overview cards -->
+      <div class="market-overview" id="holdingsOverview">
+        <div class="overview-card overview-card--wide">
+          <div class="overview-label">Total Portfolio Value</div>
+          <div class="overview-value" id="hvTotalValue">–</div>
+          <div class="overview-sub"   id="hvAssetCount">–</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Portfolio 24h Change</div>
+          <div class="overview-value" id="hvPortfolio24h">–</div>
+          <div class="overview-sub"   id="hvPortfolio24hSub">weighted by value</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Best 24h</div>
+          <div class="overview-value" id="hvBest">–</div>
+          <div class="overview-sub"   id="hvBestPct">–</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Worst 24h</div>
+          <div class="overview-value" id="hvWorst">–</div>
+          <div class="overview-sub"   id="hvWorstPct">–</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Largest Holding</div>
+          <div class="overview-value" id="hvLargest">–</div>
+          <div class="overview-sub"   id="hvLargestPct">–</div>
+        </div>
+      </div>
+
+      <!-- Holdings table -->
+      <div class="market-card">
+        <div class="market-card-header">
+          <span class="market-card-title">All Holdings</span>
+        </div>
+        <div class="market-table-scroll">
+          <table class="market-table holdings-table" aria-label="Portfolio holdings">
+            <thead>
+              <tr>
+                <th class="th-rank">#</th>
+                <th class="th-name">Asset</th>
+                <th class="th-num">Balance</th>
+                <th class="th-num">Price</th>
+                <th class="th-num">Value</th>
+                <th class="th-num">Portfolio</th>
+                <th class="th-num">24h</th>
+                <th class="th-num">1M</th>
+                <th class="th-num">1Y</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsTableBody">
+              <tr>
+                <td colspan="9" class="table-placeholder">
+                  Connect your wallet to view holdings.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section><!-- /holdingsScreen -->
+
+    <!-- ── Market Screen ────────────────────────────────────────────────── -->
+    <section id="marketScreen" class="screen hidden">
+
+      <div class="market-header">
+        <div class="market-title-wrap">
+          <h2 class="market-title">Crypto Market</h2>
+          <span class="market-updated" id="marketUpdated"></span>
+        </div>
+        <button id="refreshMarket" class="btn-ghost btn-sm">↻ Refresh</button>
+      </div>
+
+      <!-- Global overview stats -->
+      <div class="market-overview">
+        <div class="overview-card overview-card--wide">
+          <div class="overview-label">Total Market Cap</div>
+          <div class="overview-value" id="ovTotalCap">–</div>
+          <div class="overview-sub"   id="ovCapChange">–</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">24h Volume</div>
+          <div class="overview-value" id="ovVolume">–</div>
+          <div class="overview-sub">Global trading</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">BTC Dominance</div>
+          <div class="overview-value" id="ovBtcDom">–</div>
+          <div class="overview-sub">of market cap</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">ETH Dominance</div>
+          <div class="overview-value" id="ovEthDom">–</div>
+          <div class="overview-sub">of market cap</div>
+        </div>
+        <div class="overview-card">
+          <div class="overview-label">Active Coins</div>
+          <div class="overview-value" id="ovActiveCoins">–</div>
+          <div class="overview-sub">tracked globally</div>
+        </div>
+      </div>
+
+      <!-- Top 15 table -->
+      <div class="market-card">
+        <div class="market-card-header">
+          <div>
+            <span class="market-card-title">Top 15 Cryptocurrencies</span>
+            <span class="top15-sum" id="top15Sum"></span>
+          </div>
+          <a class="market-cg-link" href="https://www.coingecko.com" target="_blank" rel="noopener" title="View full market data on CoinGecko">
+            View on CoinGecko ↗
+          </a>
+        </div>
+        <div class="market-table-scroll">
+          <table class="market-table" aria-label="Top cryptocurrencies by market cap">
+            <thead>
+              <tr>
+                <th class="th-rank">#</th>
+                <th class="th-name">Name</th>
+                <th class="th-num">Price</th>
+                <th class="th-num">Market Cap</th>
+                <th class="th-num">24h Vol</th>
+                <th class="th-num">1D</th>
+                <th class="th-num">1W</th>
+                <th class="th-num">1M</th>
+                <th class="th-num">1Y</th>
+              </tr>
+            </thead>
+            <tbody id="marketTableBody">
+              <tr>
+                <td colspan="9" class="table-placeholder">
+                  <span class="spinner"></span> Loading market data…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section><!-- /marketScreen -->
+
+  </main>
 
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
   <script src="script.js"></script>
