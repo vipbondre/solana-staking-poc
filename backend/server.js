@@ -59,7 +59,7 @@ const SPL_POOLS = {
 
 // DeFiLlama project slugs for Solana staking
 const DEFILLAMA_PROJECTS = {
-  marinade: "marinade",
+  marinade: "marinade-liquid-staking",
   jito:     "jito-liquid-staking",
   blaze:    "blazestake",
   jpool:    "jpool",
@@ -104,19 +104,22 @@ log("INFO", "Solana connection initialised", { rpc: RPC_URL });
 const PRICE_TTL_MS = 60_000;
 let priceCache = { sol: 0, msol: 0, updatedAt: 0 };
 
+const LLAMA_SOL  = "solana:So11111111111111111111111111111111111111112";
+const LLAMA_MSOL = "solana:mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So";
+
 async function getPrices() {
   if (Date.now() - priceCache.updatedAt < PRICE_TTL_MS) return priceCache;
 
   try {
-    const res  = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=solana,msol&vs_currencies=usd",
+    const res = await fetch(
+      `https://coins.llama.fi/prices/current/${LLAMA_SOL},${LLAMA_MSOL}`,
       { signal: AbortSignal.timeout(8_000) }
     );
-    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`DeFiLlama prices HTTP ${res.status}`);
     const data = await res.json();
     priceCache = {
-      sol:       data.solana?.usd ?? 0,
-      msol:      data.msol?.usd   ?? 0,
+      sol:       data.coins?.[LLAMA_SOL]?.price  ?? 0,
+      msol:      data.coins?.[LLAMA_MSOL]?.price ?? 0,
       updatedAt: Date.now(),
     };
     log("DEBUG", "Prices refreshed", priceCache);
@@ -657,17 +660,28 @@ app.post("/holdings", async (req, res) => {
       tokens.push({ mint: info.mint, balance: uiAmount });
     }
 
-    // Batch-fetch USD prices + 24h change for all SPL tokens
-    let tokenPrices = {};
-    if (tokens.length > 0) {
-      const mints = tokens.map(t => t.mint).join(",");
+    // Batch-fetch USD prices + 24h change for SOL + all SPL tokens via DeFiLlama
+    let tokenPrices = {};   // mint → { usd, usd_24h_change, symbol }
+    let solChange24h = null;
+    {
+      const mintIds  = tokens.map(t => `solana:${t.mint}`);
+      const allIds   = [LLAMA_SOL, ...mintIds].join(",");
       try {
-        const priceRes = await fetch(
-          `https://api.coingecko.com/api/v3/simple/token_price/solana` +
-          `?contract_addresses=${mints}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`,
-          { signal: AbortSignal.timeout(10_000) }
-        );
-        if (priceRes.ok) tokenPrices = await priceRes.json();
+        const [priceRes, changeRes] = await Promise.all([
+          fetch(`https://coins.llama.fi/prices/current/${allIds}`, { signal: AbortSignal.timeout(10_000) }),
+          fetch(`https://coins.llama.fi/percentage/${allIds}?period=1d`, { signal: AbortSignal.timeout(10_000) }),
+        ]);
+        const [priceJson, changeJson] = await Promise.all([priceRes.json(), changeRes.json()]);
+        solChange24h = changeJson.coins?.[LLAMA_SOL] ?? null;
+        tokens.forEach(t => {
+          const key  = `solana:${t.mint}`;
+          const coin = priceJson.coins?.[key];
+          tokenPrices[t.mint] = {
+            usd:            coin?.price ?? null,
+            usd_24h_change: changeJson.coins?.[key] ?? null,
+            symbol:         coin?.symbol?.toUpperCase() ?? null,
+          };
+        });
       } catch (err) {
         log("WARN", "Token price batch fetch failed", { error: err.message });
       }
@@ -678,17 +692,14 @@ app.post("/holdings", async (req, res) => {
       tokens.map(t => getTokenDetail(t.mint))
     );
 
-    // Pull SOL change data from market cache if available
-    let solChanges = { change24h: null, change7d: null, change30d: null, change1y: null };
+    // Pull SOL extended change data from market cache (7d/30d/1y), supplement with fresh 24h from DeFiLlama
+    let solChanges = { change24h: solChange24h, change7d: null, change30d: null, change1y: null };
     if (marketCache.data?.coins) {
       const solCoin = marketCache.data.coins.find(c => c.id === "solana");
       if (solCoin) {
-        solChanges = {
-          change24h: solCoin.price_change_percentage_24h_in_currency ?? null,
-          change7d:  solCoin.price_change_percentage_7d_in_currency  ?? null,
-          change30d: solCoin.price_change_percentage_30d_in_currency ?? null,
-          change1y:  solCoin.price_change_percentage_1y_in_currency  ?? null,
-        };
+        solChanges.change7d  = solCoin.price_change_percentage_7d_in_currency  ?? null;
+        solChanges.change30d = solCoin.price_change_percentage_30d_in_currency ?? null;
+        solChanges.change1y  = solCoin.price_change_percentage_1y_in_currency  ?? null;
       }
     }
 
@@ -715,7 +726,7 @@ app.post("/holdings", async (req, res) => {
       holdings.push({
         type:      "spl",
         mint:      t.mint,
-        symbol:    detail?.symbol ?? (t.mint.slice(0, 6) + "…"),
+        symbol:    detail?.symbol ?? priceData.symbol ?? (t.mint.slice(0, 6) + "…"),
         name:      detail?.name   ?? "Unknown Token",
         image:     detail?.image  ?? null,
         balance:   t.balance,
@@ -725,7 +736,7 @@ app.post("/holdings", async (req, res) => {
         change7d:  detail?.change7d          ?? null,
         change30d: detail?.change30d         ?? null,
         change1y:  detail?.change1y          ?? null,
-        marketCap: priceData.usd_market_cap ?? detail?.marketCap ?? null,
+        marketCap: detail?.marketCap ?? null,
       });
     });
 
