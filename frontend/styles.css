@@ -385,6 +385,8 @@ button { cursor: pointer; font-family: inherit; border: none; transition: all va
 
 .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text-muted); }
 .btn-ghost.btn-danger:hover:not(:disabled) { color: var(--error); border-color: var(--error); background: var(--error-bg); }
+.btn-ghost.btn-accent { border-color: var(--accent); }
+.btn-ghost.btn-accent:hover:not(:disabled) { color: var(--text); border-color: var(--accent); background: rgba(255,140,0,.08); }
 
 .btn-icon {
   display: inline-flex;

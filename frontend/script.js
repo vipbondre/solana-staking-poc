@@ -148,8 +148,9 @@ function disconnectWallet() {
   state.solBalance  = null;
   state.msolBalance = null;
   state.txHistory   = [];
-  holdingsLoaded    = false;
-  earnLoaded        = false;
+  holdingsLoaded      = false;
+  earnLoaded          = false;
+  stakeAccountsLoaded = false;
   selectedProtocol  = null;
   selectedValidator = null;
   earnStakeMode     = 'sol';
@@ -567,16 +568,22 @@ function fmtPct(n) {
 
 // ─── Market State ─────────────────────────────────────────────────────────────
 
-let marketLoaded   = false;
-let marketTimer    = null;
+let marketLoaded    = false;
+let marketLastFetch   = 0;
+let marketStaleTimer  = null;
+let holdingsStaleTimer = null;
+let earnStaleTimer     = null;
 
 // ─── Holdings State ───────────────────────────────────────────────────────────
 
-let holdingsLoaded = false;
+let holdingsLoaded    = false;
+let holdingsLastFetch = 0;
 
 // ─── Earn State ───────────────────────────────────────────────────────────────
 
-let earnLoaded         = false;
+let earnLoaded            = false;
+let earnLastFetch         = 0;
+let stakeAccountsLoaded   = false;
 let earnProtocols      = [];
 let earnValidators     = [];
 let earnValidatorsAll  = [];   // unfiltered, for search
@@ -648,11 +655,9 @@ async function loadMarket() {
     renderMarketOverview(data.global);
     renderMarketTable(data.coins);
 
-    const updatedMs = data.cachedAt || Date.now();
-    $('marketUpdated').textContent =
-      `Updated ${timeAgo(updatedMs)}${data.stale ? ' · stale' : ''}`;
-
+    marketLastFetch = Date.now();
     marketLoaded = true;
+    updateMarketTimestamp(data.stale);
   } catch (err) {
     console.error('[market] fetch failed', err);
     const tbody = $('marketTableBody');
@@ -761,6 +766,7 @@ async function loadHoldings() {
     const data = await api.post('/holdings', { wallet: state.wallet });
     renderHoldingsOverview(data.holdings, data.totalValue);
     renderHoldingsTable(data.holdings);
+    holdingsLastFetch = Date.now();
     $('holdingsUpdated').textContent = `Updated just now`;
     holdingsLoaded = true;
   } catch (err) {
@@ -772,6 +778,12 @@ async function loadHoldings() {
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+function updateMarketTimestamp(stale = false) {
+  if (!marketLastFetch) return;
+  const el = $('marketUpdated');
+  if (el) el.textContent = `Updated ${timeAgo(marketLastFetch)}${stale ? ' · stale' : ''}`;
 }
 
 // ─── Earn: Currency Modes ─────────────────────────────────────────────────────
@@ -802,7 +814,7 @@ function toggleNativeSection() {
   nativeSectionOpen = !nativeSectionOpen;
   $('nativeSectionContent').classList.toggle('hidden', !nativeSectionOpen);
   $('nativeCollapseArrow').classList.toggle('open', nativeSectionOpen);
-  if (nativeSectionOpen && earnLoaded && state.wallet) loadStakeAccounts();
+  // stake accounts already loaded on initial earn load — no re-fetch on collapse toggle
 }
 
 // ─── Earn: Protocol Cards ─────────────────────────────────────────────────────
@@ -997,7 +1009,7 @@ function renderValidatorTable(validators) {
         <td class="col-num">${skipDisplay}</td>
         <td class="col-num">${tvlDisplay}</td>
         <td class="col-num">
-          <button class="btn-ghost btn-sm" onclick="selectValidator(${i})">
+          <button class="btn-ghost btn-sm btn-accent" onclick="selectValidator(${i})">
             ${isSelected ? '✓ Selected' : 'Select'}
           </button>
         </td>
@@ -1145,6 +1157,7 @@ async function loadStakeAccounts() {
       setNativeTvlBadge('0 SOL locked');
     }
 
+    stakeAccountsLoaded = true;
     if (!accounts.length) {
       section.classList.add('hidden');
       return;
@@ -1297,6 +1310,7 @@ async function loadEarnData() {
       $('validatorTableBody').innerHTML = `<tr><td colspan="6" class="table-placeholder">Failed to load validators — ${escapeHtml(validatorsData.reason?.message ?? '')}</td></tr>`;
     }
 
+    earnLastFetch = Date.now();
     earnLoaded = true;
   } finally {
     if (btn) btn.disabled = false;
@@ -1314,13 +1328,21 @@ function hideAllScreens() {
   $('earnScreen').classList.add('hidden');
   $('marketScreen').classList.add('hidden');
   ['tabPortfolio','tabHoldings','tabEarn','tabMarket'].forEach(id => $(id).classList.remove('active'));
-  if (marketTimer) { clearInterval(marketTimer); marketTimer = null; }
+  if (marketStaleTimer)   { clearInterval(marketStaleTimer);   marketStaleTimer   = null; }
+  if (holdingsStaleTimer) { clearInterval(holdingsStaleTimer); holdingsStaleTimer = null; }
+  if (earnStaleTimer)     { clearInterval(earnStaleTimer);     earnStaleTimer     = null; }
 }
 
 function showPortfolioView() {
   hideAllScreens();
   $('portfolioView').classList.remove('hidden');
   $('tabPortfolio').classList.add('active');
+}
+
+function updateHoldingsTimestamp() {
+  if (!holdingsLastFetch) return;
+  const el = $('holdingsUpdated');
+  if (el) el.textContent = `Updated ${timeAgo(holdingsLastFetch)}`;
 }
 
 function showHoldingsView() {
@@ -1337,6 +1359,16 @@ function showHoldingsView() {
   }
 
   if (!holdingsLoaded) loadHoldings();
+  else updateHoldingsTimestamp();
+
+  // While on tab: update timestamp text every 30s — no API calls
+  holdingsStaleTimer = setInterval(updateHoldingsTimestamp, 30_000);
+}
+
+function updateEarnTimestamp() {
+  if (!earnLastFetch) return;
+  const el = $('earnUpdated');
+  if (el) el.textContent = `Updated ${timeAgo(earnLastFetch)}`;
 }
 
 function showEarnView() {
@@ -1345,15 +1377,34 @@ function showEarnView() {
   $('tabEarn').classList.add('active');
 
   if (!earnLoaded) loadEarnData();
-  else if (state.wallet) loadStakeAccounts(); // refresh accounts on revisit
+  else {
+    updateEarnTimestamp();
+    if (state.wallet && !stakeAccountsLoaded) loadStakeAccounts();
+  }
+
+  // While on tab: update timestamp text every 30s — no API calls
+  earnStaleTimer = setInterval(updateEarnTimestamp, 30_000);
 }
+
+const MARKET_STALE_MS = 5 * 60_000; // 5 minutes
 
 function showMarketView() {
   hideAllScreens();
   $('marketScreen').classList.remove('hidden');
   $('tabMarket').classList.add('active');
-  if (!marketLoaded) loadMarket();
-  if (!marketTimer) marketTimer = setInterval(loadMarket, 5 * 60_000);
+
+  const age = Date.now() - marketLastFetch;
+  if (!marketLoaded || age > MARKET_STALE_MS) {
+    loadMarket();
+  } else {
+    updateMarketTimestamp();
+  }
+
+  // While on tab: check every 30s — refreshes data if stale (>5min), else just updates text
+  marketStaleTimer = setInterval(() => {
+    if (Date.now() - marketLastFetch >= MARKET_STALE_MS) loadMarket();
+    else updateMarketTimestamp();
+  }, 30_000);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
