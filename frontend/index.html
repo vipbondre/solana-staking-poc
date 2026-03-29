@@ -20,7 +20,7 @@
       <span class="logo-text">Solana Staking</span>
     </div>
     <div class="header-actions">
-      <span class="powered-by">Powered by Marinade</span>
+      <span class="powered-by">Solana DeFi</span>
       <button id="themeToggle" class="btn-icon" aria-label="Toggle theme" title="Toggle theme">
         <span id="themeIcon">🌙</span>
       </button>
@@ -32,6 +32,7 @@
     <div class="app-nav-inner">
       <button class="nav-tab active" id="tabPortfolio">Portfolio</button>
       <button class="nav-tab"        id="tabHoldings">Holdings</button>
+      <button class="nav-tab"        id="tabEarn">Earn</button>
       <button class="nav-tab"        id="tabMarket">Market</button>
     </div>
   </nav>
@@ -229,6 +230,134 @@
       </div>
 
     </section><!-- /holdingsScreen -->
+
+    <!-- ── Earn Screen ───────────────────────────────────────────────────── -->
+    <section id="earnScreen" class="screen hidden">
+
+      <div class="market-header">
+        <div class="market-title-wrap">
+          <h2 class="market-title">Earn on Solana</h2>
+          <span class="market-updated" id="earnUpdated"></span>
+        </div>
+        <button id="refreshEarn" class="btn-ghost btn-sm">↻ Refresh</button>
+      </div>
+
+      <!-- ── Liquid Staking ── -->
+      <div class="earn-section">
+        <div class="earn-section-header">
+          <div>
+            <h3 class="earn-section-title">Liquid Staking</h3>
+            <p class="earn-section-desc">Stake SOL and receive a liquid token. Earn yield while keeping your assets usable across DeFi.</p>
+          </div>
+        </div>
+
+        <div id="protocolGrid" class="protocol-grid">
+          <div class="table-placeholder" style="grid-column:1/-1">
+            <span class="spinner"></span> Loading protocols…
+          </div>
+        </div>
+
+        <!-- Stake panel — visible after selecting a protocol -->
+        <div id="liquidStakePanel" class="liquid-stake-panel hidden">
+          <div class="stake-panel-header">
+            <div class="stake-panel-info">
+              <span>Staking with <strong id="stakePanelName">–</strong></span>
+              <span class="stake-panel-arrow">→ receive <strong id="stakePanelToken">–</strong></span>
+            </div>
+            <button id="clearProtocol" class="btn-ghost btn-sm">✕ Cancel</button>
+          </div>
+          <div class="currency-toggle" id="earnStakeToggle">
+            <button class="toggle-opt active" data-mode="sol">SOL</button>
+            <button class="toggle-opt"        data-mode="usd">USD</button>
+          </div>
+          <div class="input-row">
+            <div class="input-wrap">
+              <input id="earnStakeAmount" type="number" min="0" step="any" placeholder="0.00" />
+              <span class="input-suffix" id="earnStakeSuffix">SOL</span>
+            </div>
+            <button id="earnMaxStake" class="btn-ghost btn-sm">Max</button>
+          </div>
+          <div class="estimate" id="earnStakeEstimate">≈ –</div>
+          <button id="earnStakeBtn" class="btn-primary" style="width:100%">Stake SOL</button>
+        </div>
+      </div>
+
+      <!-- ── Native Staking ── -->
+      <div class="earn-section">
+        <div class="earn-section-header earn-collapsible-header" onclick="toggleNativeSection()">
+          <div>
+            <h3 class="earn-section-title">Native Staking</h3>
+            <p class="earn-section-desc">Stake directly on-chain with a validator of your choice. No liquid token, zero smart contract risk. SOL unlocks after ~2 days.</p>
+          </div>
+          <div class="native-header-right">
+            <span class="earn-apy-badge">~6–7.5% APY</span>
+            <span id="nativeTotalLocked" class="native-tvl-display"></span>
+            <span id="nativeCollapseArrow" class="collapse-arrow">▶</span>
+          </div>
+        </div>
+
+        <div id="nativeSectionContent" class="hidden">
+
+          <div class="native-stake-card">
+            <!-- Validator search + table -->
+            <div class="validator-search-row">
+              <input id="validatorSearch" type="text" placeholder="Search validators by name…" />
+            </div>
+            <div class="market-table-scroll">
+              <table class="market-table validator-table" aria-label="Validators">
+                <thead>
+                  <tr>
+                    <th class="th-name">Validator</th>
+                    <th class="th-num">APY</th>
+                    <th class="th-num">Commission</th>
+                    <th class="th-num">Hit Rate</th>
+                    <th class="th-num">TVL</th>
+                    <th class="th-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="validatorTableBody">
+                  <tr><td colspan="6" class="table-placeholder"><span class="spinner"></span> Loading validators…</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Native stake form — visible after selecting a validator -->
+            <div id="nativeStakeForm" class="native-stake-form hidden">
+              <div class="selected-validator-bar">
+                <span class="selected-label">Staking with</span>
+                <strong id="selectedValidatorName">–</strong>
+                <span class="selected-meta" id="selectedValidatorMeta"></span>
+                <button id="clearValidator" class="btn-ghost btn-sm">Change</button>
+              </div>
+              <div class="currency-toggle" id="nativeStakeToggle">
+                <button class="toggle-opt active" data-mode="sol">SOL</button>
+                <button class="toggle-opt"        data-mode="usd">USD</button>
+              </div>
+              <div class="input-row">
+                <div class="input-wrap">
+                  <input id="nativeStakeAmount" type="number" min="0" step="any" placeholder="0.00" />
+                  <span class="input-suffix" id="nativeStakeSuffix">SOL</span>
+                </div>
+                <button id="maxNativeStake" class="btn-ghost btn-sm">Max</button>
+              </div>
+              <div class="estimate" id="nativeStakeEstimate">≈ –</div>
+              <button id="nativeStakeBtn" class="btn-primary" style="width:100%">Stake with Validator</button>
+            </div>
+          </div>
+
+          <!-- Existing native stake accounts -->
+          <div id="nativeAccountsSection" class="native-accounts-section hidden">
+            <div class="native-accounts-header">
+              <h4 class="native-accounts-title">Your Stake Accounts</h4>
+              <button id="refreshStakeAccounts" class="btn-ghost btn-sm">↻</button>
+            </div>
+            <div id="nativeAccountsList"></div>
+          </div>
+
+        </div><!-- /nativeSectionContent -->
+      </div>
+
+    </section><!-- /earnScreen -->
 
     <!-- ── Market Screen ────────────────────────────────────────────────── -->
     <section id="marketScreen" class="screen hidden">

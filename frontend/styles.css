@@ -983,6 +983,437 @@ html { -webkit-overflow-scrolling: touch; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   EARN TAB
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Earn section wrappers ── */
+
+.earn-section {
+  margin-bottom: 32px;
+}
+
+.earn-section + .earn-section {
+  margin-top: 12px;
+}
+
+.earn-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.earn-collapsible-header.earn-section-header {
+  margin-bottom: 12px;
+}
+
+.earn-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.earn-section-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 600px;
+}
+
+.earn-apy-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  border-radius: 100px;
+  padding: 4px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Protocol comparison grid ── */
+
+.protocol-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.protocol-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color var(--t), box-shadow var(--t), background var(--t);
+}
+
+.protocol-card:hover {
+  border-color: var(--text-muted);
+  box-shadow: var(--shadow-md);
+}
+
+.protocol-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.protocol-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.protocol-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.protocol-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.protocol-logo-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.protocol-name  { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.protocol-token { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+.best-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 100px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* APY display */
+.protocol-apy-block { line-height: 1; }
+.protocol-apy-value {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.protocol-apy-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.protocol-tvl {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Feature badges inside card */
+.protocol-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.proto-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.proto-badge-green   { color: var(--success); background: var(--success-bg); border-color: var(--success-border); }
+.proto-badge-orange  { color: var(--warning); background: var(--warning-bg); border-color: #FDE68A; }
+.proto-badge-neutral { color: var(--text-muted); background: var(--bg-secondary); border-color: var(--border); }
+
+[data-theme="dark"] .proto-badge-orange { border-color: #451A00; }
+
+/* Stake button at the bottom of card */
+.protocol-stake-btn {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ── Liquid Stake Panel ── */
+
+.liquid-stake-panel {
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+  transition: background var(--t);
+}
+
+.stake-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stake-panel-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.stake-panel-arrow { color: var(--text-muted); }
+
+/* ── Collapsible native section header ── */
+
+.earn-collapsible-header {
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  padding: 16px 20px;
+  margin-bottom: 0;
+  transition: background var(--t);
+}
+
+.earn-collapsible-header:hover { background: var(--bg-tertiary, var(--bg-secondary)); }
+
+.native-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.collapse-arrow {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.collapse-arrow.open { transform: rotate(90deg); }
+
+.native-tvl-display {
+  display: none; /* shown only once loadStakeAccounts runs */
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
+/* ── Native Staking Card ── */
+
+.native-stake-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: background var(--t), border-color var(--t);
+}
+
+.validator-search-row {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.validator-search-row input,
+#validatorSearch {
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--t), background var(--t);
+}
+
+.validator-search-row input:focus,
+#validatorSearch:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.validator-table { min-width: 640px; }
+
+.th-action { width: 80px; }
+
+.validator-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.validator-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.validator-name-text { font-weight: 600; font-size: 13px; }
+
+.validator-row-selected td { background: var(--accent-subtle) !important; }
+
+/* ── Native Stake Form ── */
+
+.native-stake-form {
+  border-top: 1px solid var(--border);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--accent-subtle);
+  transition: background var(--t);
+}
+
+.selected-validator-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.selected-label { color: var(--text-muted); }
+
+.selected-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+
+/* ── Native Stake Accounts ── */
+
+.native-accounts-section {
+  margin-top: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: background var(--t), border-color var(--t);
+}
+
+.native-accounts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.native-accounts-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stake-account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+  transition: background var(--t);
+}
+
+.stake-account-item:last-child { border-bottom: none; }
+.stake-account-item:hover { background: var(--bg-secondary); }
+
+.stake-account-info { flex: 1; min-width: 0; }
+
+.stake-account-addr {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stake-account-detail {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.stake-account-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.stake-state-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-left: 6px;
+}
+
+.stake-state-delegated   { color: var(--success); background: var(--success-bg); }
+.stake-state-deactivating { color: var(--warning); background: var(--warning-bg); }
+.stake-state-inactive    { color: var(--text-muted); background: var(--bg-secondary); }
+
+/* ── Responsive ── */
+
+@media (max-width: 640px) {
+  .protocol-grid { grid-template-columns: 1fr; }
+  .earn-section-header { flex-direction: column; align-items: flex-start; }
+  .stake-panel-header  { flex-direction: column; align-items: flex-start; }
+  .native-stake-form   { padding: 14px 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    HOLDINGS
    ═══════════════════════════════════════════════════════════════════════════ */
 
